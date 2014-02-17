@@ -5,6 +5,7 @@ import java.util.Random;
 public class App {
 
 	public static void main(String[] args) {
+		domainTree();
 		integerTree();
 	}
 	
@@ -17,25 +18,25 @@ public class App {
         btree.put(Integer.valueOf(153), null);
         btree.put(Integer.valueOf(513), null);
         btree.put(Integer.valueOf(773), null);
-        btree.put(Integer.valueOf(742), null);
-        btree.put(Integer.valueOf(373), null);
-        btree.put(Integer.valueOf(524), null);
-        btree.put(Integer.valueOf(766), null);
-        btree.put(Integer.valueOf(275), null);
-        btree.put(Integer.valueOf(737), null);
-        btree.put(Integer.valueOf(574), null);
-        btree.put(Integer.valueOf(434), null);
-        btree.put(Integer.valueOf(641), null);
-        btree.put(Integer.valueOf(207), null);
-        btree.put(Integer.valueOf(001), null);
-        btree.put(Integer.valueOf(277), null);
-        btree.put(Integer.valueOf(061), null);
-        btree.put(Integer.valueOf(736), null);
-        btree.put(Integer.valueOf(526), null);
-        btree.put(Integer.valueOf(562), null);
-        btree.put(Integer.valueOf(017), null);
-        btree.put(Integer.valueOf(107), null);
-        btree.put(Integer.valueOf(147), null);
+//        btree.put(Integer.valueOf(742), null);
+//        btree.put(Integer.valueOf(373), null);
+//        btree.put(Integer.valueOf(524), null);
+//        btree.put(Integer.valueOf(766), null);
+//        btree.put(Integer.valueOf(275), null);
+//        btree.put(Integer.valueOf(737), null);
+//        btree.put(Integer.valueOf(574), null);
+//        btree.put(Integer.valueOf(434), null);
+//        btree.put(Integer.valueOf(641), null);
+//        btree.put(Integer.valueOf(207), null);
+//        btree.put(Integer.valueOf(001), null);
+//        btree.put(Integer.valueOf(277), null);
+//        btree.put(Integer.valueOf(061), null);
+//        btree.put(Integer.valueOf(736), null);
+//        btree.put(Integer.valueOf(526), null);
+//        btree.put(Integer.valueOf(562), null);
+//        btree.put(Integer.valueOf(017), null);
+//        btree.put(Integer.valueOf(107), null);
+//        btree.put(Integer.valueOf(147), null);
 
         btree.dump();
 	}

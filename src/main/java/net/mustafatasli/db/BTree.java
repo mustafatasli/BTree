@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
-    private final int ORDER = 8;
+    private final int ORDER = 6;
     private int height = 0;
     private Node root;
     private NodeManager nm = new NodeManager();
@@ -110,11 +110,21 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
                     break;
                 }
             }
+            
+            for (int i = node.count; i > index; i--) {
+                node.keys[i] = node.keys[i - 1];
+                node.children[i] = node.children[i - 1];
+            }
+
+            node.keys[index] = key;
+            node.children[index] = child;
+            node.count++;
+            
         } else {
             // internal
             for (index = 0; index < node.count; index++) {
-                if ((index + 1 == node.count) || key.compareTo((K) node.keys[index + 1]) < 0) {
-                    Node n = insert(this.nm.getNode(node.children[index++]), key, value, --height);
+                if (key.compareTo((K) node.keys[index]) >= 0) {
+                    Node n = insert(this.nm.getNode(node.children[index]), key, value, --height);
                     if (key.compareTo((K) node.keys[0]) < 0) {
                         node.keys[0] = key;
                     }
@@ -124,19 +134,25 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
 
                     key = (K) n.keys[0];
                     child = (int) n.index;
+                    for (index = 0; index < node.count; index++) {
+                        if (key.compareTo((K) node.keys[index]) < 0) {
+                            break;
+                        }
+                    }
+                    
+                    for (int i = node.count; i > index; i--) {
+                        node.keys[i] = node.keys[i - 1];
+                        node.children[i] = node.children[i - 1];
+                    }
+
+                    node.keys[index] = key;
+                    node.children[index] = child;
+                    node.count++;
+                    
                     break;
                 }
             }
         }
-
-        for (int i = node.count; i > index; i--) {
-            node.keys[i] = node.keys[i - 1];
-            node.children[i] = node.children[i - 1];
-        }
-
-        node.keys[index] = key;
-        node.children[index] = child;
-        node.count++;
 
         if (node.isFull()) {
             return split(node);
