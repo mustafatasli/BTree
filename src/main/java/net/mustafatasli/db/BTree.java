@@ -2,18 +2,22 @@ package net.mustafatasli.db;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
 public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
-    private final int ORDER = 6;
+    final static int ORDER = 6;
     private int height = 0;
-    private Node root;
-    private NodeManager nm = new NodeManager();
+    private int size = 0;
+    private Node<K,V> root;
+    
+    NodeManager<K,V> nm; 
 
     public BTree() {
+        this.nm = new NodeManager<K,V>(this);
         this.root = this.nm.createNode();
     }
 
@@ -22,7 +26,7 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
 
     @SuppressWarnings("unchecked")
     public boolean containsKey(Object key) {
-        return this.root.contains((K) key);
+        return this.root.containsKey((K) key);
     }
 
     public boolean containsValue(Object arg0) {
@@ -41,13 +45,12 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
     }
 
     public boolean isEmpty() {
-        // TODO Auto-generated method stub
-        return false;
+        return this.size == 0;
     }
 
     public Set<K> keySet() {
-        // TODO Auto-generated method stub
-        return null;
+        Set<K> keys = new HashSet<K>();
+        return this.getKeys(this.root, keys, this.height);
     }
 
     public V remove(Object arg0) {
@@ -56,24 +59,61 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
     }
 
     public int size() {
-        // TODO Auto-generated method stub
-        return 0;
+        return this.size;
     }
 
     public Collection<V> values() {
-        // TODO Auto-generated method stub
-        return null;
+        Collection<V> values = new ArrayList<V>();
+        return this.getValues(this.root, values, this.height);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Set<K> getKeys(Node<K,V> node, Set<K> keys, int h) {
+        if (h != 0) {
+            for (long child : node.children) {
+                if(child != -1) {
+                    this.getKeys(this.nm.getNode(child), keys, h - 1);
+                }
+            }
+        } else {
+            for (int i = 0; i < node.count; i++) {
+                keys.add(node.keys[i]);
+            }
+        }
+        
+        return keys;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Collection<V> getValues(Node<K,V> node, Collection<V> values, int h) {
+        if (h != 0) {
+            for (long child : node.children) {
+                if(child != -1) {
+                    this.getValues(this.nm.getNode(child), values, h - 1);
+                }
+            }
+        } else {
+            for (int i = 0; i < node.count; i++) {
+                values.add((V)node.values[i]);
+            }
+        }
+        
+        return values;
     }
 
-    public void putAll(Map<? extends K, ? extends V> arg0) {
-
+    @SuppressWarnings("unchecked")
+    public void putAll(Map<? extends K, ? extends V> src) {
+        for(Entry<?,?> e : src.entrySet()) {
+            this.put((K)e.getKey(), (V)e.getValue());
+        }
     }
 
     @SuppressWarnings("unchecked")
     public V put(K key, V value) {
-        Node node = insert(root, key, value, height);
+        Node<K,V> node = insert(root, key, value, height);
+        this.size++;
         if (node != null) {
-            Node tmp = this.nm.createNode();
+            Node<K,V> tmp = this.nm.createNode();
             tmp.count = 2;
             tmp.keys[0] = (K) root.keys[0];
             tmp.keys[1] = (K) node.keys[0];
@@ -86,27 +126,15 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
         return null;
     }
 
-    private Node split(Node node) {
-        int median = ORDER / 2;
-        Node right = this.nm.createNode();
-        right.count = median;
-        node.count = median;
-        for (int i = 0; i < median; i++) {
-            right.keys[i] = node.keys[i + median];
-            right.children[i] = node.children[i + median];
-        }
-        return right;
-    }
-
     @SuppressWarnings("unchecked")
-    private Node insert(Node node, K key, V value, int height) {
+    private Node<K,V> insert(Node<K,V> node, K key, V value, int height) {
         int index;
         int child = -1;
 
         if (height == 0) {
             // external
             for (index = 0; index < node.count; index++) {
-                if (key.compareTo((K) node.keys[index]) < 0) {
+                if (key.compareTo(node.keys[index]) < 0) {
                     break;
                 }
             }
@@ -114,26 +142,31 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
             for (int i = node.count; i > index; i--) {
                 node.keys[i] = node.keys[i - 1];
                 node.children[i] = node.children[i - 1];
+                node.values[i] = node.values[i - 1];
             }
 
             node.keys[index] = key;
             node.children[index] = child;
+            node.values[index] = value;
+            node.external = true;
             node.count++;
             
         } else {
             // internal
             for (index = 0; index < node.count; index++) {
-                if (key.compareTo((K) node.keys[index]) >= 0) {
-                    Node n = insert(this.nm.getNode(node.children[index]), key, value, --height);
-                    if (key.compareTo((K) node.keys[0]) < 0) {
+                if (key.compareTo(node.keys[index]) >= 0) {
+                    Node<K,V> splitted= insert(this.nm.getNode(node.children[index]), key, value, --height);
+                    //update nodes first key, it must be minimum key of the child node
+                    if (key.compareTo(node.keys[0]) < 0) {
                         node.keys[0] = key;
                     }
-                    if (n == null) {
+                    if (splitted == null) {
                         return null;
                     }
-
-                    key = (K) n.keys[0];
-                    child = (int) n.index;
+                    
+                    key = splitted.keys[0];
+                    child = (int) splitted.index;
+                    
                     for (index = 0; index < node.count; index++) {
                         if (key.compareTo((K) node.keys[index]) < 0) {
                             break;
@@ -155,23 +188,23 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
         }
 
         if (node.isFull()) {
-            return split(node);
+            return node.split();
         } else {
             return null;
         }
     }
-
+    
     public void dump() {
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node<K,V>> nodes = new ArrayList<Node<K,V>>();
         nodes.add(this.root);
         dump(nodes);
     }
 
     @SuppressWarnings("unchecked")
-    private void dump(List<Node> nodes) {
+    private void dump(List<Node<K,V>> nodes) {
         K key;
         long child;
-        List<Node> children = new ArrayList<Node>();
+        List<Node<K,V>> children = new ArrayList<Node<K,V>>();
         
         for(Node n: nodes) {
             System.out.println(n.index);
@@ -195,53 +228,5 @@ public class BTree<K extends Comparable<K>, V> implements Map<K, V> {
         } else {
             return;
         }
-    }
-
-    private class NodeManager {
-        private List<Node> nodes;
-        private long next = 0;
-
-        public NodeManager() {
-            this.nodes = new ArrayList<Node>(1000);
-            for (int i = 0; i < 1000; i++) {
-                this.nodes.add(i, new Node(i));
-            }
-        }
-
-        public Node getNode(long n) {
-            return this.nodes.get((int) n);
-        }
-
-        public Node createNode() {
-            return this.nodes.get((int) next++);
-        }
-    }
-
-    private class Node {
-        private final long index;
-        private int count = 0;
-
-        private Comparable[] keys;
-        private Object[] values;
-        private long[] children;
-
-        @SuppressWarnings("unchecked")
-        public Node(long index) {
-            this.index = index;
-            this.keys = new Comparable[ORDER];
-            this.children = new long[ORDER];
-            for(int i = 0; i < ORDER; i++) {
-                this.children[i] = -1;
-            }
-        }
-
-        public boolean isFull() {
-            return this.count == ORDER;
-        }
-
-        public boolean contains(K key) {
-            return false;
-        }
-
     }
 }
